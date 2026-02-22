@@ -69,7 +69,7 @@ export default function CourierStatistics({ phoneNumber, credentials, className 
   const [steadfastData, setSteadfastData] = useState<SteadfastFraudData | null>(null);
 
   useEffect(() => {
-    if (!phoneNumber || phoneNumber.length < 10) {
+    if (!phoneNumber || phoneNumber.length < 11) {
       setStats(null);
       setSteadfastData(null);
       return;

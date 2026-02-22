@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Button, Input, Card, CardContent, CardHeader, CardTitle, ConfirmModal } from '@/components/ui';
+import { Button, Input, Card, CardContent, CardHeader, CardTitle, ConfirmModal, Modal } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import {
   filterEntries,
@@ -14,7 +14,7 @@ import {
   getStatusLabel,
   cn,
 } from '@/utils';
-import type { ReportFilters, CourierStatus } from '@/types';
+import type { ReportFilters, CourierStatus, CourierEntry } from '@/types';
 
 const statusOptions: { value: CourierStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All Status' },
@@ -34,6 +34,7 @@ export default function ReportPage() {
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<CourierEntry | null>(null);
 
   const filteredEntries = useMemo(
     () => filterEntries(entries, filters),
@@ -184,9 +185,6 @@ export default function ReportPage() {
                   COD
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -203,7 +201,11 @@ export default function ReportPage() {
                 </tr>
               ) : (
                 filteredEntries.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-gray-50">
+                  <tr 
+                    key={entry.id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => setSelectedEntry(entry)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900">
                         {entry.invoice}
@@ -224,20 +226,10 @@ export default function ReportPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {formatCurrency(entry.cod_amount)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={cn(
-                          'inline-flex px-2 py-1 text-xs font-medium rounded-full',
-                          getStatusColor(entry.status)
-                        )}
-                      >
-                        {getStatusLabel(entry.status)}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(entry.created_at)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-6 py-4 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-4">
                         {entry.tracking_code && (
                           <a
@@ -275,6 +267,92 @@ export default function ReportPage() {
         cancelText="Cancel"
         variant="danger"
       />
+
+      {/* Entry Details Modal */}
+      <Modal
+        isOpen={!!selectedEntry}
+        onClose={() => setSelectedEntry(null)}
+        title="Entry Details"
+        className="max-w-lg"
+      >
+        {selectedEntry && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Invoice</p>
+                <p className="text-sm font-medium text-gray-900">{selectedEntry.invoice}</p>
+              </div>
+              {selectedEntry.tracking_code && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Tracking Code</p>
+                  <p className="text-sm font-medium text-gray-900">{selectedEntry.tracking_code}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-200 pt-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Recipient</p>
+              <p className="text-sm font-medium text-gray-900">{selectedEntry.recipient_name}</p>
+              <p className="text-sm text-gray-600">{selectedEntry.recipient_phone}</p>
+              <p className="text-sm text-gray-600 mt-1">{selectedEntry.recipient_address}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 border-t border-gray-200 pt-4">
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">COD Amount</p>
+                <p className="text-lg font-semibold text-gray-900">{formatCurrency(selectedEntry.cod_amount)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
+                <span
+                  className={cn(
+                    'inline-flex px-2 py-1 text-xs font-medium rounded-full mt-1',
+                    getStatusColor(selectedEntry.status)
+                  )}
+                >
+                  {getStatusLabel(selectedEntry.status)}
+                </span>
+              </div>
+            </div>
+
+            {selectedEntry.note && (
+              <div className="border-t border-gray-200 pt-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Note</p>
+                <p className="text-sm text-gray-600">{selectedEntry.note}</p>
+              </div>
+            )}
+
+            <div className="border-t border-gray-200 pt-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Created</p>
+              <p className="text-sm text-gray-600">{formatDate(selectedEntry.created_at)}</p>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              {selectedEntry.tracking_code && (
+                <a
+                  href={`https://steadfast.com.bd/t/${selectedEntry.tracking_code}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1"
+                >
+                  <Button variant="outline" className="w-full">
+                    Track Order
+                  </Button>
+                </a>
+              )}
+              <Button
+                variant="danger"
+                onClick={() => {
+                  setSelectedEntry(null);
+                  handleDelete(selectedEntry.id);
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -278,8 +278,11 @@ export default function EntryPage() {
               </Card>
             )}
           </div>
-          <div>
-            <CourierStatistics phoneNumber={formData.recipient_phone} credentials={credentials} />
+          <div className={`${activeTab === "manual" ? "hidden" : ""} mt-6`}>
+            <CourierStatistics
+              phoneNumber={formData.recipient_phone}
+              credentials={credentials}
+            />
           </div>
         </div>
 
@@ -318,6 +321,13 @@ export default function EntryPage() {
                 }
                 error={errors.recipient_phone}
               />
+
+                <div className={`${activeTab === "manual" ? "block" : "hidden"} mt-4`}>
+                  <CourierStatistics
+                    phoneNumber={formData.recipient_phone}
+                    credentials={credentials}
+                  />
+                </div>
 
               <Textarea
                 label="Delivery Address"
