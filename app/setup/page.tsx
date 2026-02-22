@@ -13,9 +13,6 @@ export default function SetupPage() {
   
   const [apiKey, setApiKey] = useState('');
   const [secretKey, setSecretKey] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [validationFailed, setValidationFailed] = useState(false);
-  const [validationMessage, setValidationMessage] = useState('');
   const [errors, setErrors] = useState<{ apiKey?: string; secretKey?: string }>({});
 
   const validateForm = () => {
@@ -33,49 +30,14 @@ export default function SetupPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const saveAndContinue = () => {
-    setCredentials({ apiKey, secretKey });
-    showToast('Credentials saved!', 'success');
-    router.push('/dashboard');
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
 
-    setIsLoading(true);
-    setValidationFailed(false);
-    
-    try {
-      // Validate credentials by calling balance API
-      const response = await fetch('/api/steadfast/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, secretKey }),
-      });
-
-      const data = await response.json();
-
-      if (data.valid) {
-        const balanceMsg = data.balance !== undefined 
-          ? `Credentials verified! Your balance: ৳${data.balance}` 
-          : 'Credentials verified!';
-        showToast(balanceMsg, 'success');
-        setCredentials({ apiKey, secretKey });
-        router.push('/dashboard');
-      } else {
-        setValidationFailed(true);
-        setValidationMessage(data.message || 'Could not verify credentials');
-        showToast(data.message || 'Validation failed', 'warning');
-      }
-    } catch (error) {
-      console.error('Validation error:', error);
-      // Save anyway since validation is optional
-      saveAndContinue();
-    } finally {
-      setIsLoading(false);
-    }
+    setCredentials({ apiKey, secretKey });
+    showToast('Credentials saved!', 'success');
+    router.push('/dashboard');
   };
 
   return (
@@ -118,31 +80,14 @@ export default function SetupPage() {
                 error={errors.secretKey}
               />
 
-              <div className="pt-2 space-y-3">
+              <div className="pt-2">
                 <Button
                   type="submit"
                   className="w-full"
                   size="lg"
-                  isLoading={isLoading}
                 >
-                  {isLoading ? 'Validating...' : 'Save & Continue'}
+                  Save & Continue
                 </Button>
-
-                {validationFailed && (
-                  <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200">
-                    <p className="text-sm text-yellow-800 mb-2">
-                      {validationMessage}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={saveAndContinue}
-                    >
-                      Save Anyway & Continue
-                    </Button>
-                  </div>
-                )}
               </div>
             </form>
           </CardContent>
