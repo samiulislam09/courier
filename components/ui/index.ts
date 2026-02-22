@@ -10,3 +10,5 @@ export type { TextareaProps } from './Textarea';
 export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './Card';
 
 export { ToastProvider, useToast } from './Toast';
+
+export { Modal, ConfirmModal } from './Modal';

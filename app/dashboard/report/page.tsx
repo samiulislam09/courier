@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { Button, Input, Card, CardContent, CardHeader, CardTitle, ConfirmModal } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import {
   filterEntries,
@@ -18,12 +18,6 @@ import type { ReportFilters, CourierStatus } from '@/types';
 
 const statusOptions: { value: CourierStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All Status' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'in_review', label: 'In Review' },
-  { value: 'delivered', label: 'Delivered' },
-  { value: 'partial_delivered', label: 'Partial Delivered' },
-  { value: 'cancelled', label: 'Cancelled' },
-  { value: 'hold', label: 'On Hold' },
 ];
 
 export default function ReportPage() {
@@ -37,6 +31,9 @@ export default function ReportPage() {
     status: 'all',
     searchTerm: '',
   });
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
 
   const filteredEntries = useMemo(
     () => filterEntries(entries, filters),
@@ -65,9 +62,15 @@ export default function ReportPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this entry?')) {
-      deleteEntry(id);
+    setEntryToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (entryToDelete) {
+      deleteEntry(entryToDelete);
       showToast('Entry deleted', 'success');
+      setEntryToDelete(null);
     }
   };
 
@@ -143,7 +146,7 @@ export default function ReportPage() {
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-3 mb-6">
+      <div className="grid gap-4 sm:grid-cols-2 mb-6">
         <Card>
           <CardContent className="py-4">
             <p className="text-sm text-gray-500">Total Entries</p>
@@ -156,14 +159,7 @@ export default function ReportPage() {
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalCOD)}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="py-4">
-            <p className="text-sm text-gray-500">Delivered</p>
-            <p className="text-2xl font-bold text-green-600">
-              {filteredEntries.filter((e) => e.status === 'delivered').length}
-            </p>
-          </CardContent>
-        </Card>
+        
       </div>
 
       {/* Table */}
@@ -242,12 +238,24 @@ export default function ReportPage() {
                       {formatDate(entry.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button
-                        onClick={() => handleDelete(entry.id)}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex items-center justify-end gap-4">
+                        {entry.tracking_code && (
+                          <a
+                            href={`https://steadfast.com.bd/t/${entry.tracking_code}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                          >
+                            Track Order
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleDelete(entry.id)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -256,6 +264,17 @@ export default function ReportPage() {
           </table>
         </div>
       </Card>
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Entry"
+        message="Are you sure you want to delete this entry? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 }
